@@ -2,7 +2,6 @@
 - [Recommendation before use](#recommendation-before-use)
 - [Features](#features)
 - [Settings](#settings)
-- [Wallet](#wallet)
 - [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
 - [Obtaining API Keys](#obtaining-api-keys)
