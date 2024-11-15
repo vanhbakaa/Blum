@@ -45,6 +45,7 @@ tasks_api = f"{tasks_end_point}/tasks"
 claim_farm_api = f"{game_end_point}/farming/claim"
 start_game_api = f"{game_end_point_v2}/game/play"
 claim_game_api = f"{game_end_point_v2}/game/claim"
+friend_claim_api = f"{user_end_point}/friends/claim"
 
 
 class Tapper:
@@ -484,6 +485,20 @@ class Tapper:
             logger.warning(f"{self.session_name} | Unknown error during claiming game: {e}")
             return False
 
+    async def claim_friend(self, http_client: aiohttp.ClientSession):
+        try:
+            res = await http_client.post(friend_claim_api)
+            if res.status == 200:
+                return True
+            else:
+                logger.warning(
+                    f"{self.session_name} | <yellow>Failed to claim BP from ref: <red>{res.status}</red></yellow>")
+                return False
+
+        except Exception as e:
+            logger.warning(f"{self.session_name} | Unknown error during claiming BP from friends: {e}")
+            return None
+
     async def run(self, proxy: str | None, ua: str, token: dict | None) -> int | None:
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
 
@@ -571,6 +586,12 @@ class Tapper:
 
                     logger.info(user_info)
                     await asyncio.sleep(5)
+
+                    if friend_info['canClaim']:
+                        a = await self.claim_friend(http_client)
+                        if a:
+                            logger.success(f"{self.session_name} | <green>Successfully claimed <cyan>{friend_info['amountForClaim']}</cyan> BP from friends</green>")
+
 
                     if not is_farming:
                         await self.start_farming(http_client)
