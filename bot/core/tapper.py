@@ -666,7 +666,8 @@ class Tapper:
                         await self.auto_task(http_client)
 
                     if settings.AUTO_GAME:
-                        while self.play_passes > 0:
+                        game = randint(settings.GAME_PLAY_EACH_ROUND[0], settings.GAME_PLAY_EACH_ROUND[1])
+                        while self.play_passes > 0 and game > 0:
                             points = randint(settings.MIN_POINTS, settings.MAX_POINTS)
                             freeze = randint(1, 3)
                             game_id = await self.start_game(http_client)
@@ -675,9 +676,10 @@ class Tapper:
                             payload = await get_payload(game_id, points, freeze)
                             # print(payload)
                             logger.info(f"{self.session_name} | Wait 30 seconds to complete game!...")
-                            await asyncio.sleep(30)
+                            await asyncio.sleep(30 + freeze*3)
                             await self.claim_game(payload, points, http_client)
                             self.play_passes -= 1
+                            game -= 1
                             await asyncio.sleep(randint(5, 10))
                 else:
                     await asyncio.sleep(30)
