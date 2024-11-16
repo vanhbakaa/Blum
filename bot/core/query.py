@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import sys
 import traceback
 import time
 from urllib.parse import unquote
@@ -52,8 +53,15 @@ class Tapper:
     def __init__(self, query: str, multi_thread):
         self.query = query
         self.multi_thread = multi_thread
-        fetch_data = unquote(self.query).split("user=")[1].split("&chat_instance=")[0]
-        # print(fetch_data)
+        try:
+            fetch_data = unquote(self.query).split("user=")[1].split("&chat_instance=")[0]
+        except:
+            try:
+                fetch_data = unquote(self.query).split("user=")[1].split("&auth_date=")[0]
+            except:
+                logger.warning(f"Invaild query: {query}")
+                sys.exit()
+            # print(fetch_data)
         json_data = json.loads(fetch_data)
         self.session_name = json_data['username']
         self.first_name = ''
