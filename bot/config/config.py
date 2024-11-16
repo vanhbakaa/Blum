@@ -12,7 +12,8 @@ class Settings(BaseSettings):
 
 
     AUTO_TASK: bool = True
-    AUTO_GAME: bool = False
+    AUTO_GAME: bool = True
+    GAME_PLAY_EACH_ROUND: list[int] = [5, 10]
     MAX_POINTS: int = 220
     MIN_POINTS: int = 180
 
