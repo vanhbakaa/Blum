@@ -12,7 +12,7 @@ from aiocfscrape import CloudflareScraper
 from aiohttp_proxy import ProxyConnector
 from better_proxy import Proxy
 from bot.core.agents import fetch_version
-from bot.config import settings
+from bot.config import settings 
 
 from bot.utils import logger
 from bot.exceptions import InvalidSession
