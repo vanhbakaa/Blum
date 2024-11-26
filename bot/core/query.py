@@ -4,7 +4,7 @@ import json
 import sys
 import traceback
 import time
-from urllib.parse import unquote 
+from urllib.parse import unquote
 
 import aiohttp
 import requests
@@ -12,7 +12,7 @@ from aiocfscrape import CloudflareScraper
 from aiohttp_proxy import ProxyConnector
 from better_proxy import Proxy
 from bot.core.agents import fetch_version
-from bot.config import settings 
+from bot.config import settings
 
 from bot.utils import logger
 from bot.exceptions import InvalidSession
@@ -70,6 +70,7 @@ class Tapper:
                 except:
                     logger.warning(f"Invaild query: {query}")
                     self.session_name = ""
+
         self.first_name = ''
         self.last_name = ''
         self.user_id = ''
@@ -434,9 +435,9 @@ class Tapper:
                 if "subTasks" in list(task.keys()):
                     for subtask in task['subTasks']:
                         if subtask['type'] == "ONCHAIN_TRANSACTION" or task['title'] == "Boost Blum" or task[
-                            'status'] == "FINISHED" or task['kind'] == "ONGOING":
+                            'status'] == "FINISHED":
                             continue
-                        if subtask['status'] == "NOT_STARTED":
+                        if subtask['status'] == "NOT_STARTED" and task['kind'] != "ONGOING":
                             await self.start_task(subtask, http_client)
                         elif subtask['status'] == "READY_FOR_CLAIM":
                             await self.claim_task(subtask, http_client)
@@ -451,9 +452,9 @@ class Tapper:
                     logger.info(f"{self.session_name} | Checking tasks in sub-section: {subsection['title']}")
                     for task in subsection['tasks']:
                         if task['type'] == "ONCHAIN_TRANSACTION" or task['title'] == "Boost Blum" or task[
-                            'status'] == "FINISHED" or task['kind'] == "ONGOING":
+                            'status'] == "FINISHED":
                             continue
-                        if task['status'] == "NOT_STARTED":
+                        if task['status'] == "NOT_STARTED" and task['kind'] != "ONGOING":
                             await self.start_task(task, http_client)
                         elif task['status'] == "READY_FOR_CLAIM":
                             await self.claim_task(task, http_client)
