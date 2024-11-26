@@ -484,9 +484,9 @@ class Tapper:
                     continue
                 if "subTasks" in list(task.keys()):
                     for subtask in task['subTasks']:
-                        if subtask['type'] == "ONCHAIN_TRANSACTION" or task['title'] == "Boost Blum" or task['status'] == "FINISHED" or task['kind'] == "ONGOING":
+                        if subtask['type'] == "ONCHAIN_TRANSACTION" or task['title'] == "Boost Blum" or task['status'] == "FINISHED":
                             continue
-                        if subtask['status'] == "NOT_STARTED":
+                        if subtask['status'] == "NOT_STARTED" and task['kind'] != "ONGOING":
                             await self.start_task(subtask, http_client)
                         elif subtask['status'] == "READY_FOR_CLAIM":
                             await self.claim_task(subtask, http_client)
@@ -499,9 +499,9 @@ class Tapper:
                         continue
                     logger.info(f"{self.session_name} | Checking tasks in sub-section: {subsection['title']}")
                     for task in subsection['tasks']:
-                        if task['type'] == "ONCHAIN_TRANSACTION" or task['title'] == "Boost Blum" or task['status'] == "FINISHED" or task['kind'] == "ONGOING":
+                        if task['type'] == "ONCHAIN_TRANSACTION" or task['title'] == "Boost Blum" or task['status'] == "FINISHED":
                             continue
-                        if task['status'] == "NOT_STARTED":
+                        if task['status'] == "NOT_STARTED" and task['kind'] != "ONGOING":
                             await self.start_task(task, http_client)
                         elif task['status'] == "READY_FOR_CLAIM":
                             await self.claim_task(task, http_client)
