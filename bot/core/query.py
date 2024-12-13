@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import json
-import sys
 import traceback
 import time
 from urllib.parse import unquote
@@ -18,7 +17,7 @@ from bot.utils import logger
 from bot.exceptions import InvalidSession
 from .headers import headers
 from random import randint
-
+import cloudscraper
 from datetime import datetime
 from bot.utils.ps import check_base_url
 from bot.utils import launcher as lc
@@ -87,6 +86,7 @@ class Tapper:
         self.dogs_eligible = False
         self.end_farm_time = 0
 
+
     @staticmethod
     def is_expired(token):
         if token is None or isinstance(token, bool):
@@ -124,15 +124,15 @@ class Tapper:
         except Exception as error:
             logger.error(f"{self.session_name} | Proxy: {proxy} | Error: {error}")
 
-    async def get_token(self, http_client: aiohttp.ClientSession):
+    async def get_token(self, http_client: cloudscraper.CloudScraper):
         payload = {
             "query": self.auth_token,
             "referralToken": self.my_ref
         }
         try:
-            token = await http_client.post(token_api, json=payload)
-            if token.status == 200:
-                token_res = await token.json()
+            token = http_client.post(token_api, json=payload)
+            if token.status_code == 200:
+                token_res = token.json()
                 token_info = token_res['token']
                 if token_res['justCreated']:
                     logger.success(
@@ -152,22 +152,22 @@ class Tapper:
 
                 return True
             else:
-                logger.warning(f"{self.session_name} | Get token failed: {token.status}")
+                logger.warning(f"{self.session_name} | Get token failed: {token.status_code}")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error while trying to get token: {e}")
             return False
 
-    async def refresh_token_func(self, http_client: aiohttp.ClientSession, proxy):
+    async def refresh_token_func(self, http_client: cloudscraper.CloudScraper, proxy):
         payload = {
             "refresh": self.refresh_token
         }
         try:
-            refresh = await http_client.post(refesh_token_api, json=payload)
-            if refresh.status == 200:
+            refresh = http_client.post(refesh_token_api, json=payload)
+            if refresh.status_code == 200:
                 logger.success(f"{self.session_name} | <green>Access token refreshed successfully!</green>")
-                token_info = await refresh.json()
+                token_info = refresh.json()
                 self.access_token = token_info['access']
                 self.refresh_token = token_info['refresh']
 
@@ -179,93 +179,93 @@ class Tapper:
                 await self.modify_json(user_data)
 
                 return True
-            elif refresh.status == 401:
+            elif refresh.status_code == 401:
                 tg_web_data = self.query
                 self.auth_token = tg_web_data
                 return await self.get_token(http_client)
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to refresh token: <red>{refresh.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to refresh token: <red>{refresh.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during refreshing access token: {e}")
             return False
 
-    async def get_basic_info(self, http_client: aiohttp.ClientSession):
+    async def get_basic_info(self, http_client: cloudscraper.CloudScraper):
         try:
-            me = await http_client.get(me_api)
-            if me.status == 200:
+            me = http_client.get(me_api)
+            if me.status_code == 200:
                 logger.success(f"{self.session_name} | <green>Get basic info successfully!</green>")
-                info = await me.json()
+                info = me.json()
                 self.game_uuid = info['id']['id']
 
                 return self.game_uuid
-            elif me.status == 401:
+            elif me.status_code == 401:
                 logger.warning(
                     f"{self.session_name} | <yellow>Failed to get basic info: <red>Access token expired</red></yellow>")
                 return None
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to get basic info: <red>{me.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to get basic info: <red>{me.status_code}</red></yellow>")
                 return None
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during getting account info: {e}")
             return None
 
-    async def get_friend_balance(self, http_client: aiohttp.ClientSession):
+    async def get_friend_balance(self, http_client: cloudscraper.CloudScraper):
         try:
-            friends = await http_client.get(friend_balance_api)
-            if friends.status == 200:
-                info = await friends.json()
+            friends = http_client.get(friend_balance_api)
+            if friends.status_code == 200:
+                info = friends.json()
                 return info
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to get friends balance: <red>{friends.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to get friends balance: <red>{friends.status_code}</red></yellow>")
                 return None
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during getting friends info: {e}")
             return None
 
-    async def get_time_now(self, http_client: aiohttp.ClientSession):
+    async def get_time_now(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.get(time_api)
-            if res.status == 200:
+            res = http_client.get(time_api)
+            if res.status_code == 200:
                 return True
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to get time: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to get time: <red>{res.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during getting time: {e}")
             return False
 
-    async def get_user_balance(self, http_client: aiohttp.ClientSession):
+    async def get_user_balance(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.get(user_balance_api)
-            if res.status == 200:
-                info = await res.json()
+            res = http_client.get(user_balance_api)
+            if res.status_code == 200:
+                info = res.json()
                 return info
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to get user balance: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to get user balance: <red>{res.status_code}</red></yellow>")
                 return None
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during getting account info: {e}")
             return None
 
-    async def claim_daily_rw(self, http_client: aiohttp.ClientSession):
+    async def claim_daily_rw(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.get(daily_rw_api)
-            if res.status == 200:
-                info = await res.json()
+            res = http_client.get(daily_rw_api)
+            if res.status_code == 200:
+                info = res.json()
                 days = info['days'][-1]
-                claim = await http_client.post(daily_rw_api)
-                if claim.status == 200:
+                claim = http_client.post(daily_rw_api)
+                if claim.status_code == 200:
                     logger.success(
                         f'{self.session_name} | <green>Successfully claimed daily rewards - Current streak: <cyan>{days["ordinal"]}</cyan></green>')
             else:
@@ -274,10 +274,10 @@ class Tapper:
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during claiming daily rewards: {e}")
 
-    async def join_tribe(self, http_client: aiohttp.ClientSession):
+    async def join_tribe(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.post(tribe_api)
-            if res.status == 200:
+            res = http_client.post(tribe_api)
+            if res.status_code == 200:
                 logger.success(f"{self.session_name} | <green>Successfully joined tribe!</green>")
             else:
                 return
@@ -285,10 +285,10 @@ class Tapper:
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during joining tribe: {e}")
 
-    async def get_tribe_info(self, http_client: aiohttp.ClientSession):
+    async def get_tribe_info(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.get(tribe_info_api)
-            if res.status == 200:
+            res = http_client.get(tribe_info_api)
+            if res.status_code == 200:
                 return True
             else:
                 return False
@@ -297,11 +297,11 @@ class Tapper:
             logger.warning(f"{self.session_name} | Unknown error during getting tribe info: {e}")
             return False
 
-    async def check_dogs_eligible(self, http_client: aiohttp.ClientSession):
+    async def check_dogs_eligible(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.get(dogs_eligible_api)
-            if res.status == 200:
-                eligible = await res.json()
+            res = http_client.get(dogs_eligible_api)
+            if res.status_code == 200:
+                eligible = res.json()
                 return eligible['eligible']
             else:
                 return False
@@ -310,92 +310,92 @@ class Tapper:
             logger.warning(f"{self.session_name} | Unknown error during getting tribe info: {e}")
             return False
 
-    async def start_farming(self, http_client: aiohttp.ClientSession):
+    async def start_farming(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.post(start_farm_api)
-            if res.status == 200:
+            res = http_client.post(start_farm_api)
+            if res.status_code == 200:
                 logger.success(f"{self.session_name} | <green>Farm started successfully!</green>")
-                farm_info = await res.json()
+                farm_info = res.json()
                 self.end_farm_time = farm_info['endTime']
                 return True
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to start farming: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to start farming: <red>{res.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during starting farm: {e}")
             return False
 
-    async def claim_farm(self, farm_info, http_client: aiohttp.ClientSession):
+    async def claim_farm(self, farm_info, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.post(claim_farm_api)
-            if res.status == 200:
+            res = http_client.post(claim_farm_api)
+            if res.status_code == 200:
                 logger.success(
                     f"{self.session_name} | Successfully claimed <cyan>{farm_info['balance']}</cyan> BP from farm")
                 await asyncio.sleep(5)
                 return await self.start_farming(http_client)
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to claim farming: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to claim farming: <red>{res.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during claiming farm: {e}")
             return False
 
-    async def get_task_list(self, http_client: aiohttp.ClientSession):
+    async def get_task_list(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.get(tasks_api)
-            if res.status == 200:
-                tasks = await res.json()
+            res = http_client.get(tasks_api)
+            if res.status_code == 200:
+                tasks = res.json()
                 return tasks
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to start farming: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to start farming: <red>{res.status_code}</red></yellow>")
                 return None
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during getting tasks list: {e}")
             return None
 
-    async def start_task(self, task, http_client: aiohttp.ClientSession):
+    async def start_task(self, task, http_client: cloudscraper.CloudScraper):
         url = f"{tasks_api}/{task['id']}/start"
         try:
-            res = await http_client.post(url)
-            if res.status == 200:
+            res = http_client.post(url)
+            if res.status_code == 200:
                 logger.info(
                     f"{self.session_name} | <green>Successfully started task: <cyan>{task['title']}</cyan></green>")
 
                 return True
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to start <cyan>{task['title']}</cyan>: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to start <cyan>{task['title']}</cyan>: <red>{res.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during starting task: {e}")
             return False
 
-    async def claim_task(self, task, http_client: aiohttp.ClientSession):
+    async def claim_task(self, task, http_client: cloudscraper.CloudScraper):
         url = f"{tasks_api}/{task['id']}/claim"
         try:
-            res = await http_client.post(url)
-            if res.status == 200:
+            res = http_client.post(url)
+            if res.status_code == 200:
                 back = f"- Earned <cyan>{task['reward']}</cyan>" if task['reward'] != "0" else ""
                 logger.info(
                     f"{self.session_name} | <green>Successfully claimed <cyan>{task['title']}</cyan> {back}</green>")
                 return True
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to claim <cyan>{task['title']}</cyan>: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to claim <cyan>{task['title']}</cyan>: <red>{res.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during claiming task: {e}")
             return False
 
-    async def validate_task(self, task, http_client: aiohttp.ClientSession):
+    async def validate_task(self, task, http_client: cloudscraper.CloudScraper):
         url = f"{tasks_api}/{task['id']}/validate"
         ans = requests.get("https://raw.githubusercontent.com/vanhbakaa/nothing/refs/heads/main/blum_ans.json")
         answer = ans.json()
@@ -407,30 +407,30 @@ class Tapper:
             "keyword": vid_ans
         }
         try:
-            res = await http_client.post(url, json=payload)
-            if res.status == 200:
+            res = http_client.post(url, json=payload)
+            if res.status_code == 200:
                 logger.success(
                     f"{self.session_name} | <green>Task <cyan>{task['title']}</cyan> validate successfully, claiming...</green>")
                 return await self.claim_task(task, http_client)
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to validate <cyan>{task['title']}</cyan>: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to validate <cyan>{task['title']}</cyan>: <red>{res.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during validating task: {e}")
             return False
 
-    async def auto_task(self, http_client: aiohttp.ClientSession):
+    async def auto_task(self, http_client: cloudscraper.CloudScraper):
         tasks = await self.get_task_list(http_client)
         if tasks is None:
             return
         for section in tasks:
-            logger.info(f"{self.session_name} | Checking tasks in section type: <cyan>{section['sectionType']}</cyan>")
+            logger.info(
+                f"{self.session_name} | Checking tasks in section type: <cyan>{section['sectionType']}</cyan>")
             for task in section['tasks']:
                 if task['type'] == "ONCHAIN_TRANSACTION" or task['title'] == "Boost Blum" or task[
-                    'status'] == "FINISHED" or \
-                        task['kind'] == "ONGOING":
+                    'status'] == "FINISHED" or task['kind'] == "ONGOING":
                     continue
                 if "subTasks" in list(task.keys()):
                     for subtask in task['subTasks']:
@@ -441,7 +441,6 @@ class Tapper:
                             await self.start_task(subtask, http_client)
                         elif subtask['status'] == "READY_FOR_CLAIM":
                             await self.claim_task(subtask, http_client)
-
                         await asyncio.sleep(randint(3, 5))
 
                     continue
@@ -463,42 +462,22 @@ class Tapper:
 
                         await asyncio.sleep(randint(3, 5))
 
-    async def start_game(self, http_client: aiohttp.ClientSession):
+    async def start_game(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.post(start_game_api)
-            if res.status == 200:
-                info = await res.json()
+            res = http_client.post(start_game_api)
+            if res.status_code == 200:
+                info = res.json()
                 logger.success(
                     f"{self.session_name} | <green>Successfully start game! - ID: <cyan>{info['gameId']}</cyan></green>")
                 return info['gameId']
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to start game: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to start game: <red>{res.status_code}</red></yellow>")
                 return None
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during start game: {e}")
             return None
-
-    async def claim_game(self, game_payload, points, http_client: aiohttp.ClientSession):
-        payload = {
-            "payload": game_payload
-        }
-        try:
-            res = await http_client.post(claim_game_api, json=payload)
-            if res.status == 200:
-                logger.success(
-                    f"{self.session_name} | <green>Successfully claimed <cyan>{points}</cyan> BP from game!</green>")
-                return True
-            else:
-                print(await res.text())
-                logger.warning(
-                    f"{self.session_name} | <yellow>Failed to claim game: <red>{res.status}</red></yellow>")
-                return False
-
-        except Exception as e:
-            logger.warning(f"{self.session_name} | Unknown error during claiming game: {e}")
-            return False
 
     async def claim_friend(self, http_client: aiohttp.ClientSession):
         try:
@@ -514,13 +493,36 @@ class Tapper:
             logger.warning(f"{self.session_name} | Unknown error during claiming BP from friends: {e}")
             return None
 
+    async def claim_game(self, game_payload, points, http_client: cloudscraper.CloudScraper):
+        payload = {
+            "payload": game_payload
+        }
+        try:
+            res = http_client.post(claim_game_api, json=payload)
+            if res.status_code == 200:
+                logger.success(
+                    f"{self.session_name} | <green>Successfully claimed <cyan>{points}</cyan> BP from game!</green>")
+                return True
+            else:
+                print(res.text)
+                logger.warning(
+                    f"{self.session_name} | <yellow>Failed to claim game: <red>{res.status_code}</red></yellow>")
+                return False
+
+        except Exception as e:
+            logger.warning(f"{self.session_name} | Unknown error during claiming game: {e}")
+            return False
+
     async def run(self, proxy: str | None, ua: str, token: dict | None) -> int | None:
         proxy_conn = ProxyConnector().from_url(proxy) if proxy else None
 
         headers["User-Agent"] = ua
         chrome_ver = fetch_version(headers['User-Agent'])
-        headers['Sec-Ch-Ua'] = f'"Chromium";v="{chrome_ver}", "Android WebView";v="{chrome_ver}", "Not.A/Brand";v="99"'
+        headers[
+            'Sec-Ch-Ua'] = f'"Chromium";v="{chrome_ver}", "Android WebView";v="{chrome_ver}", "Not.A/Brand";v="99"'
         http_client = CloudflareScraper(headers=headers, connector=proxy_conn)
+
+        session = cloudscraper.create_scraper()
 
         if proxy:
             proxy_check = await self.check_proxy(http_client=http_client, proxy=proxy)
@@ -543,100 +545,96 @@ class Tapper:
                     if token is None:
                         tg_web_data = self.query
                         self.auth_token = tg_web_data
-                        await self.get_token(http_client)
+                        await self.get_token(session)
                     else:
                         self.access_token = token['access']
                         self.refresh_token = token['refresh']
 
                     if self.is_expired(self.access_token):
-                        await self.refresh_token_func(http_client, proxy)
+                        await self.refresh_token_func(session, proxy)
 
                     if self.access_token is None:
                         return
 
-                    http_client.headers['Authorization'] = f"Bearer {self.access_token}"
+                    session.headers['Authorization'] = f"Bearer {self.access_token}"
 
-                    me_status = await self.get_basic_info(http_client)
+                    me_status = await self.get_basic_info(session)
                     if me_status == 2 or me_status == 1:
                         await asyncio.sleep(15)
                         continue
 
-                    tribe = await self.get_tribe_info(http_client)
+                    tribe = await self.get_tribe_info(session)
                     if tribe is False:
-                        await self.join_tribe(http_client)
+                        await self.join_tribe(session)
 
-                    friend_info = await self.get_friend_balance(http_client)
-                    await self.get_time_now(http_client)
+                    friend_info = await self.get_friend_balance(session)
+                    await self.get_time_now(session)
                     if friend_info is None:
                         await asyncio.sleep(15)
                         continue
 
-                    await self.claim_daily_rw(http_client)
+                    await self.claim_daily_rw(session)
 
-                    user_balance_info = await self.get_user_balance(http_client)
+                    user_balance_info = await self.get_user_balance(session)
                     if user_balance_info is None:
                         await asyncio.sleep(15)
                         continue
                     self.play_passes = user_balance_info['playPasses']
                     self.user_balance = int(float(user_balance_info['availableBalance']))
 
-                    self.dogs_eligible = await self.check_dogs_eligible(http_client)
+                    self.dogs_eligible = await self.check_dogs_eligible(session)
                     is_farming = False
                     if "farming" in list(user_balance_info.keys()):
                         is_farming = True
 
-                    with open("ref_link.txt", "a") as f:
-                        f.write(f"https://t.me/blum/app?startapp=ref_{friend_info['referralToken']}\n")
-
                     user_info = f"""
-                            ====<cyan>{self.session_name}</cyan>====
-                            USER INFO
-                                ├── BP Balance: <cyan>{self.user_balance}</cyan> BP
-                                ├── Total play passes: <cyan>{self.play_passes}</cyan>
-                                ├── Farming: <red>{is_farming}</red>
-                                └── Dogs drop: <red>{self.dogs_eligible}</red>
-    
-                            FRENS INFO:
-                                ├── Total invited: <cyan>{friend_info['usedInvitation']}</cyan>
-                                ├── Amount for claim: <cyan>{friend_info['amountForClaim']}</cyan>
-                                └── Can claim: <red>{friend_info['canClaim']}</red>
-                            """
+                    ====<cyan>{self.session_name}</cyan>====
+                    USER INFO
+                        ├── BP Balance: <cyan>{self.user_balance}</cyan> BP
+                        ├── Total play passes: <cyan>{self.play_passes}</cyan>
+                        ├── Farming: <red>{is_farming}</red>
+                        └── Dogs drop: <red>{self.dogs_eligible}</red>
+
+                    FRENS INFO:
+                        ├── Total invited: <cyan>{friend_info['usedInvitation']}</cyan>
+                        ├── Amount for claim: <cyan>{friend_info['amountForClaim']}</cyan>
+                        └── Can claim: <red>{friend_info['canClaim']}</red>
+                    """
 
                     logger.info(user_info)
                     await asyncio.sleep(5)
-
                     if friend_info['canClaim']:
                         a = await self.claim_friend(http_client)
                         if a:
-                            logger.success(f"{self.session_name} | <green>Successfully claimed <cyan>{friend_info['amountForClaim']}</cyan> BP from friends</green>")
-
+                            logger.success(
+                                f"{self.session_name} | <green>Successfully claimed <cyan>{friend_info['amountForClaim']}</cyan> BP from friends</green>")
 
                     if not is_farming:
-                        await self.start_farming(http_client)
+                        await self.start_farming(session)
                         await asyncio.sleep(5)
                     else:
                         self.end_farm_time = user_balance_info['farming']['endTime']
 
                     if int(time.time() * 1000) >= self.end_farm_time:
-                        await self.claim_farm(user_balance_info['farming'], http_client)
+                        await self.claim_farm(user_balance_info['farming'], session)
                         await asyncio.sleep(5)
 
                     if settings.AUTO_TASK:
-                        await self.auto_task(http_client)
+                        await self.auto_task(session)
 
                     if settings.AUTO_GAME:
                         game = randint(settings.GAME_PLAY_EACH_ROUND[0], settings.GAME_PLAY_EACH_ROUND[1])
                         while self.play_passes > 0 and game > 0:
                             points = randint(settings.MIN_POINTS, settings.MAX_POINTS)
                             freeze = randint(1, 3)
-                            game_id = await self.start_game(http_client)
+                            game_id = await self.start_game(session)
                             if game_id is None:
                                 break
                             payload = await get_payload(game_id, points, freeze)
                             # print(payload)
                             logger.info(f"{self.session_name} | Wait 30 seconds to complete game!...")
                             await asyncio.sleep(30 + freeze * 3)
-                            await self.claim_game(payload, points, http_client)
+                            await self.claim_game(payload, points, session)
                             self.play_passes -= 1
                             game -= 1
                             await asyncio.sleep(randint(5, 10))
