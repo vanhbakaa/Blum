@@ -1,7 +1,8 @@
-import requests
+import cloudscraper
 import re
 from bot.utils import logger
 from bot.config import settings
+from bot.core.headers import headers
 
 baseUrl = [
     "https://gateway.blum.codes",
@@ -12,10 +13,11 @@ baseUrl = [
     "https://user-domain.blum.codes",
     "https://earn-domain.blum.codes"
 ]
-
+session = cloudscraper.create_scraper()
+headers_d = headers.copy()
 def get_main_js_format(base_url):
     try:
-        response = requests.get(base_url)
+        response = session.get(base_url, headers=headers_d)
         response.raise_for_status()  # Raises an HTTPError for bad responses
         content = response.text
         matches = re.findall(r'href="([^"]*\.js)"', content)
@@ -24,14 +26,14 @@ def get_main_js_format(base_url):
             return sorted(set(matches), key=len, reverse=True)
         else:
             return None
-    except requests.RequestException as e:
+    except Exception as e:
         logger.warning(f"Error fetching the base URL: {e}")
         return None
 
 def get_base_api(url):
     try:
         logger.info("Checking for changes in api...")
-        response = requests.get(url)
+        response = session.get(url, headers=headers_d)
         response.raise_for_status()
         content = response.text
         match = re.findall(r'https://[a-zA-Z0-9\.-]+', content)
@@ -42,7 +44,7 @@ def get_base_api(url):
         else:
             logger.info("Could not find 'baseUrl' in the content.")
             return None
-    except requests.RequestException as e:
+    except Exception as e:
         logger.warning(f"Error fetching the JS file: {e}")
         return None
 
@@ -53,7 +55,7 @@ def check_base_url():
 
     if main_js_formats:
         if settings.ADVANCED_ANTI_DETECTION:
-            r = requests.get(
+            r = session.get(
                 "https://raw.githubusercontent.com/vanhbakaa/nothing/refs/heads/main/blum")
             js_ver = r.text.strip()
             for js in main_js_formats:
@@ -62,7 +64,7 @@ def check_base_url():
                     return True
             return False
 
-        r = requests.get(
+        r = session.get(
             "https://raw.githubusercontent.com/vanhbakaa/nothing/refs/heads/main/blum")
         js_ver = r.text.strip()
 
@@ -87,9 +89,9 @@ def check_base_url():
     else:
         logger.info("Could not find any main.js format. Dumping page content for inspection:")
         try:
-            response = requests.get(base_url)
+            response = session.get(base_url)
             print(response.text[:1000])  # Print first 1000 characters of the page
             return False
-        except requests.RequestException as e:
+        except Exception as e:
             logger.warning(f"Error fetching the base URL for content dump: {e}")
             return False
