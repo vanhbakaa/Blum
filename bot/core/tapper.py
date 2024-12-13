@@ -527,14 +527,14 @@ class Tapper:
             logger.warning(f"{self.session_name} | Unknown error during start game: {e}")
             return None
 
-    async def claim_friend(self, http_client: aiohttp.ClientSession):
+    async def claim_friend(self, http_client: cloudscraper.CloudScraper):
         try:
-            res = await http_client.post(friend_claim_api)
-            if res.status == 200:
+            res = http_client.post(friend_claim_api)
+            if res.status_code == 200:
                 return True
             else:
                 logger.warning(
-                    f"{self.session_name} | <yellow>Failed to claim BP from ref: <red>{res.status}</red></yellow>")
+                    f"{self.session_name} | <yellow>Failed to claim BP from ref: <red>{res.status_code}</red></yellow>")
                 return False
 
         except Exception as e:
@@ -651,7 +651,7 @@ class Tapper:
                     logger.info(user_info)
                     await asyncio.sleep(5)
                     if friend_info['canClaim']:
-                        a = await self.claim_friend(http_client)
+                        a = await self.claim_friend(session)
                         if a:
                             logger.success(f"{self.session_name} | <green>Successfully claimed <cyan>{friend_info['amountForClaim']}</cyan> BP from friends</green>")
 
