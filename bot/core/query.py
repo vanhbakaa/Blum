@@ -36,7 +36,7 @@ me_api = f"{user_end_point}/user/me"
 friend_balance_api = f"{user_end_point}/friends/balance"
 time_api = f"{game_end_point}/time/now"
 user_balance_api = f"{game_end_point}/user/balance"
-daily_rw_api = f"{game_end_point}/daily-reward?offset=-420"
+daily_rw_api = f"{game_end_point}/daily-reward"
 tribe_api = f"{tribe_end_point}/tribe/16ff530b-e219-41a9-a9e5-cf2275c5663d/join"
 tribe_info_api = f"{tribe_end_point}/tribe/my"
 dogs_eligible_api = f"{game_end_point_v2}/game/eligibility/dogs_drop"
@@ -263,13 +263,13 @@ class Tapper:
             res = http_client.get(daily_rw_api)
             if res.status_code == 200:
                 info = res.json()
-                days = info['days'][-1]
-                claim = http_client.post(daily_rw_api)
-                if claim.status_code == 200:
-                    logger.success(
-                        f'{self.session_name} | <green>Successfully claimed daily rewards - Current streak: <cyan>{days["ordinal"]}</cyan></green>')
-            else:
-                logger.info(f"{self.session_name} | Daily rewards already claimed today!")
+                if info['claim'] == "available":
+                    claim = http_client.post(daily_rw_api)
+                    if claim.status_code == 200:
+                        logger.success(
+                            f'{self.session_name} | <green>Successfully claimed daily rewards - Current streak: <cyan>{info["currentStreakDays"]+1}</cyan></green>')
+                else:
+                    logger.info(f"{self.session_name} | Daily rewards already claimed today!")
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during claiming daily rewards: {e}")
