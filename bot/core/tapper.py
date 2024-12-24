@@ -321,13 +321,13 @@ class Tapper:
             res = http_client.get(daily_rw_api)
             if res.status_code == 200:
                 info = res.json()
-                days = info['days'][-1]
-                claim = http_client.post(daily_rw_api)
-                if claim.status_code == 200:
-                    logger.success(
-                        f'{self.session_name} | <green>Successfully claimed daily rewards - Current streak: <cyan>{days["ordinal"]}</cyan></green>')
-            else:
-                logger.info(f"{self.session_name} | Daily rewards already claimed today!")
+                if info['claim'] == "available":
+                    claim = http_client.post(daily_rw_api)
+                    if claim.status_code == 200:
+                        logger.success(
+                            f'{self.session_name} | <green>Successfully claimed daily rewards - Current streak: <cyan>{info["currentStreakDays"]+1}</cyan></green>')
+                else:
+                    logger.info(f"{self.session_name} | Daily rewards already claimed today!")
 
         except Exception as e:
             logger.warning(f"{self.session_name} | Unknown error during claiming daily rewards: {e}")
